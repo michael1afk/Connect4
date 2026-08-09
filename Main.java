@@ -13,8 +13,7 @@ public class Main {
          * Change this array to test another legal position.
          */
         int[] moves = {
-                4, 4, 1, 6, 3, 0, 6, 0,
-                5, 3, 5
+                3,3,3,3,3,4,4
         };
 
         Board board = new Board();
@@ -55,7 +54,7 @@ public class Main {
 
         Solver solver = new Solver();
 
-        System.out.println("Running alpha-beta negamax...");
+        System.out.println("Running alpha-beta negamax + transposition table...");
 
         long start = System.nanoTime();
         int result = solver.negamax(board);
@@ -77,6 +76,12 @@ public class Main {
         }
 
         System.out.println("Nodes searched: " + nodes);
+        System.out.println("TT entries: " + solver.getTableSize()
+                + " / " + solver.getTableCapacity());
+        System.out.println("TT collision replacements: "
+                + solver.getTableCollisionReplacements());
+        System.out.println("TT hits: " + solver.getTableHits());
+        System.out.println("TT cutoffs: " + solver.getTableCutoffs());
         System.out.printf("Search time: %.6f seconds%n", seconds);
 
         if (seconds > 0.0) {
