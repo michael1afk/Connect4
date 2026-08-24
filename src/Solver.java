@@ -13,6 +13,20 @@ public class Solver {
     private long nodesSearched;
 
     /*
+     * Node budget.
+     *
+     * An exact W/D/L proof from an early position can take hundreds of
+     * millions of nodes. A root driver that wants to stay responsive sets a
+     * budget; when it is exceeded, the search throws SearchAbortedException
+     * and the caller falls back to a cheaper policy.
+     *
+     * Aborting never corrupts the transposition table: entries are only
+     * written after a subtree finishes, so a half-explored subtree stores
+     * nothing at all.
+     */
+    private long nodeLimit = Long.MAX_VALUE;
+
+    /*
      * Optimization 7: fixed-size primitive transposition table.
      *
      * Unlike HashMap<Long, TTEntry>, this table performs no boxing or entry
@@ -24,11 +38,28 @@ public class Solver {
     private long tableCutoffs;
     private long collisionReplacementsAtSearchStart;
 
-    public int negamax(Board board) {
+    /**
+     * Set the maximum number of nodes a single search may visit before
+     * throwing SearchAbortedException. Long.MAX_VALUE means unlimited.
+     */
+    public void setNodeLimit(long nodeLimit) {
+        this.nodeLimit = nodeLimit;
+    }
+
+    /**
+     * Reset per-search statistics. The public negamax entry point does this
+     * automatically; a root driver that issues several windowed searches per
+     * move calls it once per move instead.
+     */
+    public void resetCounters() {
         nodesSearched = 0;
         tableHits = 0;
         tableCutoffs = 0;
         collisionReplacementsAtSearchStart = table.getCollisionReplacements();
+    }
+
+    public int negamax(Board board) {
+        resetCounters();
 
         /*
          * Do NOT clear the table here.
@@ -71,8 +102,17 @@ public class Solver {
         return table.getCollisionReplacements() - collisionReplacementsAtSearchStart;
     }
 
-    private int negamax(Board board, int alpha, int beta) {
+    /*
+     * Package-private rather than private so that a root driver in the same
+     * package can carry alpha from one child to the next. Searching every
+     * root child with a fresh full window throws away most of the pruning.
+     */
+    int negamax(Board board, int alpha, int beta) {
         nodesSearched++;
+
+        if (nodesSearched > nodeLimit) {
+            throw SearchAbortedException.INSTANCE;
+        }
 
         int alphaOriginal = alpha;
         int betaOriginal = beta;

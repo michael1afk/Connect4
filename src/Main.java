@@ -13,7 +13,7 @@ public class Main {
          * Change this array to test another legal position.
          */
         int[] moves = {
-                3,3,3,3,3,4,4
+                3,1,4,2,4,3,2
         };
 
         Board board = new Board();
